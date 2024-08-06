@@ -1,0 +1,28 @@
+import numpy as np
+import scipy.stats as stats
+
+# Control group data (blue button)
+control_visitors = 1000
+control_conversions = 200
+
+# Experimental group data (orange button)
+experimental_visitors = 1000
+experimental_conversions = 230
+
+# Calculate conversion rates
+control_conversion_rate = control_conversions / control_visitors
+experimental_conversion_rate = experimental_conversions / experimental_visitors
+
+# Perform a two-sample t-test
+t_stat, p_value = stats.ttest_ind_from_stats(
+    control_conversion_rate, np.sqrt(control_conversion_rate),
+    control_visitors, experimental_conversion_rate,
+    np.sqrt(experimental_conversion_rate), experimental_visitors
+)
+
+# Check if the results are statistically significant
+if p_value < 0.05:
+    print("The experimental version is statistically better.")
+else:
+    print("The experimental version is not statistically better.")
+
