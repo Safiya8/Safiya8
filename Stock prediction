@@ -1,0 +1,62 @@
+pip install pandas numpy scikit-learn tensorflow
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
+
+# Load your dataset
+# Replace 'your_dataset.csv' with your actual dataset file
+data = pd.read_csv('your_dataset.csv')
+
+# Assuming 'Close' is the column with the stock prices
+prices = data['Close'].values
+prices = prices.reshape(-1, 1)
+
+# Normalize the data
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled_prices = scaler.fit_transform(prices)
+
+# Create the dataset for training
+def create_dataset(dataset, look_back=1):
+    X, y = [], []
+    for i in range(len(dataset) - look_back - 1):
+        a = dataset[i:(i + look_back), 0]
+        X.append(a)
+        y.append(dataset[i + look_back, 0])
+    return np.array(X), np.array(y)
+
+look_back = 60
+X, y = create_dataset(scaled_prices, look_back)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Reshape input to be [samples, time steps, features]
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+# Create the LSTM model
+model = Sequential()
+model.add(LSTM(50, return_sequences=True, input_shape=(look_back, 1)))
+model.add(LSTM(50, return_sequences=False))
+model.add(Dense(25))
+model.add(Dense(1))
+
+# Compile the model
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+model.fit(X_train, y_train, batch_size=1, epochs=1)
+
+# Make predictions
+predictions = model.predict(X_test)
+predictions = scaler.inverse_transform(predictions)
+
+# Evaluate the model
+rmse = np.sqrt(np.mean(predictions - y_test)**2)
+print(f'Root Mean Squared Error: {rmse}')
+
+# Save the model
+model.save('stock_prediction_model.h5')
